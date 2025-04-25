@@ -94,7 +94,7 @@
             </div>
 
             <!-- Khu vực typing -->
-            <div class="typing-area">
+            <div class="typing-area relative" @click="focusInput">
               <h3 class="text-md font-medium mb-2">{{ typingPrompt }}</h3>
               <div 
                 class="p-4 bg-white border-2 border-gray-300 rounded-md font-mono text-lg"
@@ -133,6 +133,9 @@
                   ></textarea>
                 </template>
               </div>
+              <input ref="hiddenInput" v-model="mobileInput" @keydown="handleKeyInput" type="text"
+                class="absolute inset-0 w-full h-full opacity-0"
+                inputmode="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" />
             </div>
 
             <!-- Nút kiểm tra và chuyển câu -->
@@ -437,6 +440,7 @@ const calculateSimilarity = (text1, text2) => {
 const LOCAL_INDEX_KEY = 'language_current_index';
 const feedbackBg = ref("");
 const imageHintUrl = ref("");
+const mobileInput = ref('');
 
 const getImageHintKeyword = () => {
   // Ưu tiên lấy câu tiếng Anh hiện tại làm từ khóa gợi ý
@@ -635,6 +639,11 @@ const handleKeyInput = (event) => {
       }
     }
   }
+};
+
+const focusInput = () => {
+  const hiddenInput = $refs.hiddenInput;
+  hiddenInput.focus();
 };
 
 // LocalStorage sync cho câu hỏi
