@@ -60,6 +60,10 @@
           </div>
         </div>
 
+        <!-- Gợi ý hình ảnh minh họa -->
+        <div v-if="imageHintUrl" class="flex justify-center mb-4">
+          <img :src="imageHintUrl" alt="Gợi ý hình ảnh" class="max-h-40 rounded-xl shadow border-2 border-blue-300 object-contain bg-white p-1"/>
+        </div>
         <!-- Hiển thị câu và bài tập -->
         <div class="p-4 rounded-lg mb-6 transition-colors duration-700"
   :class="[
@@ -190,6 +194,7 @@
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { fetchImageForKeyword } from '../../services/imageSearchService';
 
 // Hiển thị tooltip/toast cho nút âm thanh
 const showAudioHint = ref(false);
@@ -431,7 +436,27 @@ const calculateSimilarity = (text1, text2) => {
 
 const LOCAL_INDEX_KEY = 'language_current_index';
 const feedbackBg = ref("");
-const nextSentence = () => {
+const imageHintUrl = ref("");
+
+const getImageHintKeyword = () => {
+  // Ưu tiên lấy câu tiếng Anh hiện tại làm từ khóa gợi ý
+  if (languageStore.currentSentence && languageStore.currentSentence.eng) {
+    return languageStore.currentSentence.eng;
+  }
+  return '';
+};
+
+const updateImageHint = async () => {
+  const keyword = getImageHintKeyword();
+  if (!keyword) {
+    imageHintUrl.value = '';
+    return;
+  }
+  const url = await fetchImageForKeyword(keyword);
+  imageHintUrl.value = url || '';
+};
+const nextSentence = async () => {
+
   // Hiệu ứng màu nền theo kết quả câu trước
   if (isCompleted.value) {
     feedbackBg.value = isCorrect.value ? 'success' : 'fail';
@@ -442,6 +467,7 @@ const nextSentence = () => {
   languageStore.nextSentence();
   localStorage.setItem(LOCAL_INDEX_KEY, String(languageStore.currentSentenceIndex));
   resetExercise();
+  await updateImageHint();
 };
 
 import { synthesizeSpeech } from '../../services/ttsService';
@@ -637,6 +663,7 @@ onMountedVue(() => {
 
 // Lắng nghe phím tắt
 onMounted(() => {
+  updateImageHint();
   // Lắng nghe phím tắt
   window.addEventListener('keydown', (e) => {
     // Ctrl+1,2,3,4 để chuyển chế độ học
