@@ -24,7 +24,8 @@
           v-for="(todo, index) in todos"
           :key="todo.id"
           class="flex items-center justify-between p-3 bg-white border border-gray-200 rounded shadow-sm"
-        >
+          :class="{'!bg-gray-200': todo.completed}"
+          >
           <!-- Chế độ xem -->
           <div v-if="!todo.isEditing" class="flex items-center flex-1">
             <span :class="{ 'line-through text-gray-400': todo.completed }" class="ml-2">
@@ -46,7 +47,7 @@
             <!-- Nút hoàn thành -->
             <button
               @click="toggleComplete(todo)"
-              :class="todo.completed ? 'bg-gray-500' : 'bg-green-500'"
+              :class="todo.completed ? '!bg-gray-500' : '!bg-green-500'"
               class="p-1 text-white rounded hover:opacity-80 focus:outline-none"
             >
               <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -81,11 +82,14 @@
       <p v-if="todos.length === 0" class="text-center text-gray-500 mt-4">
         Không có công việc nào. Hãy thêm mới!
       </p>
+      <p v-if="todos.length > 0" class="text-center text-gray-500 mt-4">
+       có {{ todos.length }} cần hoàn thành
+      </p>
     </div>
   </template>
   
   <script setup>
-  import { ref, watch, onMounted } from 'vue'
+  import { reactive ,ref, watch, onMounted } from 'vue'
   
   // Directive tự động focus khi vào chế độ chỉnh sửa
   const vFocus = {
@@ -100,12 +104,12 @@
   const addTodo = () => {
     if (newTodo.value.trim() === '') return
     
-    todos.value.push({
+    todos.value.push(reactive({
       id: Date.now(),
       text: newTodo.value.trim(),
       completed: false,
       isEditing: false
-    })
+    }))
     
     newTodo.value = ''
   }

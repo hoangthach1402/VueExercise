@@ -1,7 +1,9 @@
 <template>
   <AppProvider>
-   
-  <TodoEx2 />
+    <PaginationEx02 
+      v-model:current-page="currentPage" 
+      @page-changed="handlePageChange" 
+    />
   </AppProvider>
 </template>
 
@@ -11,8 +13,12 @@ import TodoEx2 from './components/BT02/TodoEx2.vue'
 import UserForm from './components/BT02/UserForm.vue'
 import { ref } from 'vue'
 import { AppProvider } from '@ownego/polaris-vue'
+import PaginationEx02 from './components/BT02/PaginationEx02.vue'
 
-
+const currentPage = ref(1)
+const handlePageChange = (newPage) => {
+  currentPage.value = newPage
+}
 </script>
 
 <style>
@@ -69,3 +75,4 @@ import { AppProvider } from '@ownego/polaris-vue'
   }
 }
 </style>
+<PaginationEx02 v-model:current-page="currentPage" @page-changed="handlePageChange" />
