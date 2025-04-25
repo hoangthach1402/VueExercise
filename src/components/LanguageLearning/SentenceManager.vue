@@ -1,6 +1,9 @@
 <template>
   <div class="sentence-manager bg-white rounded-lg shadow-md p-6 mt-8">
     <h2 class="text-xl font-bold mb-4">Quản lý câu học tập</h2>
+    <div class="mb-2 text-sm text-gray-600">
+      Dung lượng localStorage đang sử dụng: {{ storageUsage }} KB / 5120 KB
+    </div>
     
     <!-- Thêm đoạn văn bản tiếng Anh, tự tách câu và dịch -->
     <div class="bg-yellow-50 p-4 rounded-lg mb-6">
@@ -111,6 +114,20 @@
 
 <script setup>
 import { ref, computed, onMounted,watch } from 'vue';
+
+// Tính tổng dung lượng localStorage đang sử dụng (KB)
+const storageUsage = computed(() => {
+  let total = 0;
+  for (let key in localStorage) {
+    if (localStorage.hasOwnProperty(key)) {
+      try {
+        total += localStorage[key].length * 2; // UTF-16: 2 bytes/char
+      } catch {}
+    }
+  }
+  return (total/1024).toFixed(2);
+});
+
 import { useLanguageStore } from '../../stores/languageStore';
 import { translateText } from '../../services/translateService';
 
