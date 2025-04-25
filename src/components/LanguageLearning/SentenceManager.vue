@@ -110,7 +110,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted,watch } from 'vue';
 import { useLanguageStore } from '../../stores/languageStore';
 import { translateText } from '../../services/translateService';
 
@@ -142,10 +142,14 @@ const handleBulkAdd = async () => {
   saveSentencesToLocal();
 };
 
-// LocalStorage sync
+// LocalStorage sync (bao gồm cả vị trí từ đang học)
 const LOCAL_KEY = 'language_sentences';
+const LOCAL_INDEX_KEY = 'language_current_index';
+const currentIndex = ref(0); // chỉ số từ đang học
+
 const saveSentencesToLocal = () => {
   localStorage.setItem(LOCAL_KEY, JSON.stringify(languageStore.sentences));
+  localStorage.setItem(LOCAL_INDEX_KEY, String(currentIndex.value));
 };
 const loadSentencesFromLocal = () => {
   const data = localStorage.getItem(LOCAL_KEY);
@@ -156,6 +160,11 @@ const loadSentencesFromLocal = () => {
         languageStore.sentences.splice(0, languageStore.sentences.length, ...arr);
       }
     } catch {}
+  }
+  // Load vị trí từ đang học
+  const idx = localStorage.getItem(LOCAL_INDEX_KEY);
+  if (idx !== null && !isNaN(Number(idx))) {
+    currentIndex.value = Number(idx);
   }
 };
 

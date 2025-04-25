@@ -24,20 +24,20 @@
         <div class="mb-6">
           <h2 class="text-lg font-semibold mb-3">Chọn chế độ học:</h2>
           <div class="flex flex-wrap gap-2">
-            <button 
-              v-for="mode in learningModes" 
-              :key="mode.id"
-              @click="selectMode(mode.id)"
-              :class="[
-                'px-4 py-2 rounded-md transition-colors',
-                currentMode === mode.id 
-                  ? 'bg-blue-600 text-white' 
-                  : 'bg-gray-200 hover:bg-gray-300 text-gray-800'
-              ]"
-            >
-              {{ mode.name }}
-            </button>
-          </div>
+  <button 
+    v-for="(mode, idx) in learningModes" 
+    :key="mode.id"
+    @click="selectMode(mode.id)"
+    :class="[
+      'px-4 py-2 rounded-md transition-colors border-2',
+      currentMode === mode.id 
+        ? 'bg-blue-700 text-white border-blue-900 shadow font-bold' 
+        : 'bg-gray-200 hover:bg-gray-300 text-gray-800 border-gray-300'
+    ]"
+  >
+    <span class="font-bold mr-1">{{ idx + 1 }}</span> {{ mode.name }}
+  </button>
+</div>
         </div>
 
         <!-- Chọn độ khó -->
@@ -49,10 +49,10 @@
               :key="level.id"
               @click="selectDifficulty(level.id)"
               :class="[
-                'px-4 py-2 rounded-md transition-colors',
+                'px-4 py-2 rounded-md transition-colors border-2',
                 currentDifficulty === level.id 
-                  ? 'bg-green-600 text-white' 
-                  : 'bg-gray-200 hover:bg-gray-300 text-gray-800'
+                  ? 'bg-green-700 text-white border-green-900 shadow font-bold' 
+                  : 'bg-gray-200 hover:bg-gray-300 text-gray-800 border-gray-300'
               ]"
             >
               {{ level.name }} ({{ level.maskPercentage }}%)
@@ -61,21 +61,32 @@
         </div>
 
         <!-- Hiển thị câu và bài tập -->
-        <div class="bg-gray-50 p-4 rounded-lg mb-6">
+        <div class="p-4 rounded-lg mb-6 transition-colors duration-700"
+  :class="[
+    feedbackBg === 'success' ? 'bg-blue-100' : '',
+    feedbackBg === 'fail' ? 'bg-red-100' : '',
+    !feedbackBg ? 'bg-gray-50' : ''
+  ]"
+>
           <div v-if="currentSentence" class="mb-4">
             <!-- Hiển thị câu gốc hoặc phát âm thanh tùy theo chế độ -->
             <div class="mb-4">
               <div v-if="showSourceText" class="text-lg font-medium mb-2">
                 {{ isVietnameseSource ? currentSentence.vietnamese : currentSentence.eng }}
               </div>
-              <div v-if="shouldPlayAudio" class="flex items-center gap-2">
-                <button @click="playAudio" class="bg-blue-500 text-white p-2 rounded-full">
-                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
-                  </svg>
-                </button>
-                <span class="text-sm text-gray-600">Nhấn để nghe</span>
-              </div>
+              <div v-if="shouldPlayAudio" class="flex items-center gap-2 relative">
+  <button @click="playAudio" class="bg-blue-500 text-white p-2 rounded-full" @mouseenter="showAudioHint = true" @mouseleave="showAudioHint = false">
+    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+    </svg>
+  </button>
+  <span class="text-sm text-gray-600">Nhấn để nghe</span>
+  <transition name="fade">
+    <div v-if="showAudioHint" class="absolute left-1/2 top-full mt-2 -translate-x-1/2 bg-black text-white text-xs rounded px-2 py-1 z-20 shadow-lg whitespace-nowrap">
+      Ctrl+Q để nghe lại
+    </div>
+  </transition>
+</div>
             </div>
 
             <!-- Khu vực typing -->
@@ -179,6 +190,20 @@
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue';
+
+// Hiển thị tooltip/toast cho nút âm thanh
+const showAudioHint = ref(false);
+
+// Toast UI
+const toastMsg = ref("");
+const showToast = ref(false);
+function triggerToast(msg) {
+  toastMsg.value = msg;
+  showToast.value = true;
+  setTimeout(() => showToast.value = false, 1200);
+}
+
+
 import { useLanguageStore } from '../../stores/languageStore';
 import SentenceManager from './SentenceManager.vue';
 import { translateText } from '../../services/translateService';
@@ -404,8 +429,18 @@ const calculateSimilarity = (text1, text2) => {
   return commonWords.length / Math.max(words1.length, words2.length, 1);
 };
 
+const LOCAL_INDEX_KEY = 'language_current_index';
+const feedbackBg = ref("");
 const nextSentence = () => {
+  // Hiệu ứng màu nền theo kết quả câu trước
+  if (isCompleted.value) {
+    feedbackBg.value = isCorrect.value ? 'success' : 'fail';
+    setTimeout(() => {
+      feedbackBg.value = '';
+    }, 700);
+  }
   languageStore.nextSentence();
+  localStorage.setItem(LOCAL_INDEX_KEY, String(languageStore.currentSentenceIndex));
   resetExercise();
 };
 
@@ -589,17 +624,61 @@ const loadSentencesFromLocal = () => {
       }
     } catch {}
   }
+  // Khôi phục vị trí câu đang học
+  const idx = localStorage.getItem(LOCAL_INDEX_KEY);
+  if (idx !== null && !isNaN(Number(idx))) {
+    languageStore.currentSentenceIndex = Number(idx);
+  }
 };
 
 onMountedVue(() => {
   loadSentencesFromLocal();
 });
 
-// Lifecycle hooks
+// Lắng nghe phím tắt
 onMounted(() => {
-  // Thêm event listener cho sự kiện keydown
+  // Lắng nghe phím tắt
+  window.addEventListener('keydown', (e) => {
+    // Ctrl+1,2,3,4 để chuyển chế độ học
+    if (e.ctrlKey && !e.shiftKey && !e.altKey) {
+      if (e.key === '1' || e.key === '2' || e.key === '3' || e.key === '4') {
+        const idx = Number(e.key) - 1;
+        if (learningModes[idx]) {
+          selectMode(learningModes[idx].id);
+          triggerToast(`Chế độ: ${idx+1} - ${learningModes[idx].name}`);
+          e.preventDefault();
+        }
+      }
+      // Ctrl+E để phát lại âm thanh
+      if ((e.key === 'q' || e.key === 'Q') && shouldPlayAudio.value) {
+        playAudio();
+        showAudioHint.value = true;
+        setTimeout(() => showAudioHint.value = false, 1200);
+        e.preventDefault();
+        e.stopImmediatePropagation(); // Ngăn gọi playAudio lần 2
+      }
+      // Ctrl+Space để kiểm tra hoặc qua câu mới
+      if (e.code === 'Space' && e.ctrlKey) {
+        if (!isCompleted.value) {
+          checkAnswer();
+          triggerToast('Đã kiểm tra đáp án (Ctrl+Space)');
+        } else {
+          nextSentence();
+          triggerToast('Đã chuyển sang câu tiếp theo (Ctrl+Space)');
+        }
+        e.preventDefault();
+      }
+      // Ctrl+S để chuyển tab Quản lý câu/học tập
+      if ((e.key === 's' || e.key === 'S')) {
+        showSentenceManager.value = !showSentenceManager.value;
+        triggerToast(showSentenceManager.value ? 'Chuyển sang Quản lý câu (Ctrl+S)' : 'Quay lại Học tập (Ctrl+S)');
+        e.preventDefault();
+      }
+    }
+  });
+  // Lắng nghe phím nhập liệu thông thường
   window.addEventListener('keydown', handleKeyInput);
-  
+
   // Cleanup khi component unmount
   onUnmounted(() => {
     window.removeEventListener('keydown', handleKeyInput);
