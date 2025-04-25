@@ -1,9 +1,9 @@
 <template>
   <AppProvider>
-    <PaginationEx02 
-      v-model:current-page="currentPage" 
-      @page-changed="handlePageChange" 
-    />
+    <div class="container mx-auto p-4">
+      <h1 class="text-3xl font-bold text-center mb-6">Ứng Dụng Học Ngôn Ngữ</h1>
+      <LanguageApp />
+    </div>
   </AppProvider>
 </template>
 
@@ -14,6 +14,7 @@ import UserForm from './components/BT02/UserForm.vue'
 import { ref } from 'vue'
 import { AppProvider } from '@ownego/polaris-vue'
 import PaginationEx02 from './components/BT02/PaginationEx02.vue'
+import LanguageApp from './components/LanguageLearning/LanguageApp.vue'
 
 const currentPage = ref(1)
 const handlePageChange = (newPage) => {
