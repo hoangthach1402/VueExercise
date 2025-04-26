@@ -2,68 +2,95 @@
   <div class="language-app bg-gray-100 min-h-screen p-4">
     <div class="max-w-4xl mx-auto bg-white rounded-lg shadow-lg overflow-hidden">
       <!-- Nút chuyển đổi giữa học tập và quản lý câu -->
-      <div class="bg-gray-200 p-2 flex justify-end">
+      <!-- Header với nút Quản lý câu nổi bật -->
+      <div class="flex items-center justify-end gap-4 mb-6">
         <button 
-          @click="showSentenceManager = !showSentenceManager" 
-          class="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors text-sm"
+          @click="showHelp = true"
+          @mouseenter="triggerToast('Phím tắt: H')"
+          class="px-5 py-3 text-lg font-bold bg-gradient-to-r from-green-400 to-green-600 text-white rounded-xl shadow hover:from-green-500 hover:to-green-700 transition-all duration-200 focus:outline-none focus:ring-4 focus:ring-green-200"
+        >
+          Help
+        </button>
+        <button 
+          @click="showSentenceManager = !showSentenceManager"
+          @mouseenter="triggerToast('Phím tắt: Ctrl+M')"
+          class="px-6 py-3 text-lg font-bold bg-gradient-to-r from-blue-500 to-blue-700 text-white rounded-xl shadow hover:from-blue-600 hover:to-blue-800 transition-all duration-200 focus:outline-none focus:ring-4 focus:ring-blue-200"
         >
           {{ showSentenceManager ? 'Quay lại học tập' : 'Quản lý câu' }}
         </button>
       </div>
-      <header class="bg-blue-600 text-white p-4">
-        <h1 class="text-2xl font-bold">Học Ngôn Ngữ Qua Typing</h1>
-        <p class="text-sm opacity-80">Luyện tập Anh-Việt thông qua kỹ năng gõ phím</p>
-      </header>
-
+      <!-- Sheet Help -->
+      <div v-if="showHelp" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+        <div class="bg-white rounded-xl shadow-lg max-w-lg w-full p-8 relative animate-fade-in">
+          <button @click="showHelp = false" class="absolute top-2 right-2 text-2xl text-gray-500 hover:text-red-500">&times;</button>
+          <h2 class="text-2xl font-bold mb-4 text-blue-700">Hướng dẫn sử dụng</h2>
+          <ul class="list-disc pl-6 space-y-2 text-base text-gray-700">
+            <li><b>Phím tắt chuyển chế độ học:</b> <span class="font-mono bg-gray-100 px-2 rounded">Ctrl+1</span> (Nghe Việt), <span class="font-mono bg-gray-100 px-2 rounded">Ctrl+2</span> (Nghe Anh)</li>
+            <li><b>Phím tắt chuyển mức độ khó:</b> <span class="font-mono bg-gray-100 px-2 rounded">Ctrl+3</span> (25%), <span class="font-mono bg-gray-100 px-2 rounded">Ctrl+4</span> (50%), <span class="font-mono bg-gray-100 px-2 rounded">Ctrl+5</span> (75%)</li>
+            <li><b>Phím nghe lại câu:</b> <span class="font-mono bg-gray-100 px-2 rounded">Ctrl+Q</span></li>
+            <li><b>Phím chuyển tab Quản lý câu:</b> <span class="font-mono bg-gray-100 px-2 rounded">Ctrl+M</span></li>
+            <li><b>Phím qua câu tiếp theo:</b> <span class="font-mono bg-gray-100 px-2 rounded">Ctrl+Enter</span> hoặc <span class="font-mono bg-gray-100 px-2 rounded">Ctrl+Space</span></li>
+            <li><b>Thêm từ nhanh:</b> Khi nhập từ mới, dùng dấu <span class="font-mono">.</span> để phân tách tiếng Anh và tiếng Việt, ví dụ: <span class="font-mono bg-gray-100 px-2 rounded">hello.xin chào</span> sẽ tự động thêm "hello" (Anh) và "xin chào" (Việt).</li>
+          </ul>
+        </div>
+      </div>
       <div class="p-6">
+
         <!-- Hiển thị SentenceManager hoặc giao diện học tập -->
         <SentenceManager v-if="showSentenceManager" />
         
         <div v-else>
-        <!-- Chọn chế độ học -->
-        <div class="mb-6">
-          <h2 class="text-lg font-semibold mb-3">Chọn chế độ học:</h2>
-          <div class="flex flex-wrap gap-2">
-  <button 
-    v-for="(mode, idx) in learningModes" 
-    :key="mode.id"
-    @click="selectMode(mode.id)"
-    :class="[
-      'px-4 py-2 rounded-md transition-colors border-2',
-      currentMode === mode.id 
-        ? 'bg-blue-700 text-white border-blue-900 shadow font-bold' 
-        : 'bg-gray-200 hover:bg-gray-300 text-gray-800 border-gray-300'
-    ]"
-  >
-    <span class="font-bold mr-1">{{ idx + 1 }}</span> {{ mode.name }}
-  </button>
-</div>
-        </div>
-
-        <!-- Chọn độ khó -->
-        <div class="mb-6">
-          <h2 class="text-lg font-semibold mb-3">Độ khó:</h2>
-          <div class="flex flex-wrap gap-2">
-            <button 
-              v-for="level in difficultyLevels" 
-              :key="level.id"
-              @click="selectDifficulty(level.id)"
-              :class="[
-                'px-4 py-2 rounded-md transition-colors border-2',
-                currentDifficulty === level.id 
-                  ? 'bg-green-700 text-white border-green-900 shadow font-bold' 
-                  : 'bg-gray-200 hover:bg-gray-300 text-gray-800 border-gray-300'
-              ]"
-            >
-              {{ level.name }} ({{ level.maskPercentage }}%)
-            </button>
+        <!-- Layout chia 2 bên: trái là chế độ học + độ khó, phải là hình ảnh -->
+        <div class="flex flex-row gap-8 items-start mb-6">
+          <!-- Bên trái: chế độ học + độ khó -->
+          <div class="flex flex-col gap-6 flex-1 min-w-0">
+            <!-- Chọn chế độ học -->
+            <div>
+              <h2 class="text-lg font-semibold mb-3">Chọn chế độ học:</h2>
+              <div class="flex flex-wrap gap-2">
+                <button 
+                  v-for="(mode, idx) in learningModes" 
+                  :key="mode.id"
+                  @click="selectMode(mode.id)"
+                  @mouseenter="triggerToast('Phím tắt: Ctrl+' + (idx+1))"
+                  :class="[
+                    'px-4 py-2 rounded-md transition-colors border-2',
+                    currentMode === mode.id 
+                      ? 'bg-blue-700 text-white border-blue-900 shadow font-bold' 
+                      : 'bg-gray-200 hover:bg-gray-300 text-gray-800 border-gray-300'
+                  ]"
+                >
+                  <span class="font-bold mr-1">{{ idx + 1 }}</span> {{ mode.name }}
+                </button>
+              </div>
+            </div>
+            <!-- Chọn độ khó -->
+            <div>
+              <h2 class="text-lg font-semibold mb-3">Độ khó:</h2>
+              <div class="flex flex-wrap gap-2">
+                <button 
+                  v-for="(level, idx) in difficultyLevels" 
+                  :key="level.id"
+                  @click="selectDifficulty(level.id)"
+                  @mouseenter="triggerToast('Phím tắt: Ctrl+' + (idx+3))"
+                  :class="[
+                    'px-4 py-2 rounded-md transition-colors border-2',
+                    currentDifficulty === level.id 
+                      ? 'bg-green-700 text-white border-green-900 shadow font-bold' 
+                      : 'bg-gray-200 hover:bg-gray-300 text-gray-800 border-gray-300'
+                  ]"
+                >
+                  {{ level.name }} ({{ level.maskPercentage }}%)
+                </button>
+              </div>
+            </div>
+          </div>
+          <!-- Bên phải: hình ảnh minh họa -->
+          <div v-if="imageHintUrl" class="flex-1 flex justify-center items-start min-w-[120px] max-w-[220px]">
+            <img :src="imageHintUrl" alt="Gợi ý hình ảnh" class="w-full max-h-40 rounded-xl shadow border-2 border-blue-300 object-contain bg-white p-1"/>
           </div>
         </div>
 
-        <!-- Gợi ý hình ảnh minh họa -->
-        <div v-if="imageHintUrl" class="flex justify-center mb-4">
-          <img :src="imageHintUrl" alt="Gợi ý hình ảnh" class="max-h-40 rounded-xl shadow border-2 border-blue-300 object-contain bg-white p-1"/>
-        </div>
         <!-- Hiển thị câu và bài tập -->
         <div class="p-4 rounded-lg mb-6 transition-colors duration-700"
   :class="[
@@ -94,12 +121,12 @@
             </div>
 
             <!-- Khu vực typing -->
-            <div class="typing-area relative" @click="focusInput">
+            <div class="typing-area relative pointer-events-none" @click="focusInput">
               <h3 class="text-md font-medium mb-2">{{ typingPrompt }}</h3>
-              <div 
-                class="p-4 bg-white border-2 border-gray-300 rounded-md font-mono text-lg"
-                :class="{'border-green-500': isCompleted && isCorrect, 'border-red-500': isCompleted && !isCorrect}"
-              >
+               <div 
+                 class="p-4 bg-white border-2 border-gray-300 rounded-md font-mono text-lg select-none"
+                 :class="{'border-green-500': isCompleted && isCorrect, 'border-red-500': isCompleted && !isCorrect}"
+               >
                 <template v-if="currentMode === 'readVietnameseTypeEnglish' || currentMode === 'listenEnglishTypeEnglish' || currentMode === 'listenVietnameseTypeEnglish'">
                   <div class="flex flex-wrap">
                     <template v-for="(char, index) in maskedTargetText" :key="index">
@@ -166,6 +193,9 @@
           <h3 class="font-semibold text-lg mb-2">Kết quả:</h3>
           <div v-if="isCorrect" class="text-green-600 font-medium">
             Chính xác! Rất tốt.
+            <div class="mt-2 text-base text-green-800 bg-green-50 rounded p-2 border border-green-200">
+              Nghĩa tiếng Việt: <span class="font-semibold">{{ currentSentence.vietnamese }}</span>
+            </div>
           </div>
           <div v-else class="text-red-600 font-medium mb-2">
             Chưa chính xác. Hãy thử lại.
@@ -197,6 +227,7 @@
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue';
+const showHelp = ref(false);
 import { fetchImageForKeyword } from '../../services/imageSearchService';
 
 // Hiển thị tooltip/toast cho nút âm thanh
@@ -223,9 +254,7 @@ const languageStore = useLanguageStore();
 // Các chế độ học
 const learningModes = [
   { id: 'listenVietnameseTypeEnglish', name: 'Nghe Việt → Type Anh' },
-  { id: 'listenEnglishTypeEnglish', name: 'Nghe Anh → Type Anh' },
-  { id: 'readVietnameseTypeEnglish', name: 'Đọc Việt → Type Anh' },
-  { id: 'readEnglishTranslate', name: 'Đọc Anh → Giải nghĩa' },
+  { id: 'listenEnglishTypeEnglish', name: 'Nghe Anh → Type Anh' }
 ];
 
 // Các mức độ khó
@@ -508,6 +537,68 @@ const playAudio = async () => {
 
 // Xử lý sự kiện nhập liệu
 const handleKeyInput = (event) => {
+  // Không nhận phím Ctrl+1,2,3,4,5,S,B,M,Space,Enter khi đang typing
+  if (event.ctrlKey && !event.shiftKey && !event.altKey) {
+    if (event.key === '1' || event.key === '2') {
+      const idx = Number(event.key) - 1;
+      if (learningModes[idx]) {
+        selectMode(learningModes[idx].id);
+        triggerToast(`Chế độ: ${idx+1} - ${learningModes[idx].name}`);
+        event.preventDefault();
+      }
+    }
+    // Ctrl+3,4,5 để chuyển mức độ khó
+    if (event.key === '3' || event.key === '4' || event.key === '5') {
+      const levelIdx = { '3': 0, '4': 1, '5': 2 }[event.key];
+      if (difficultyLevels[levelIdx]) {
+        selectDifficulty(difficultyLevels[levelIdx].id);
+        triggerToast(`Độ khó: ${difficultyLevels[levelIdx].name} (${difficultyLevels[levelIdx].maskPercentage}%)`);
+        event.preventDefault();
+      }
+    }
+    // Ctrl+M để chuyển tab Quản lý câu
+    if ((event.key === 'm' || event.key === 'M')) {
+      showSentenceManager.value = !showSentenceManager.value;
+      triggerToast('Chuyển tab Quản lý câu (Ctrl+M)');
+      event.preventDefault();
+      return;
+    }
+    // Ctrl+B để quay lại màn hình chính
+    if ((event.key === 'b' || event.key === 'B')) {
+      if (showSentenceManager.value) {
+        showSentenceManager.value = false;
+        triggerToast('Quay lại màn hình chính (Ctrl+B)');
+        event.preventDefault();
+        return;
+      }
+    }
+    // Ctrl+Q để phát lại âm thanh
+    if ((event.key === 'q' || event.key === 'Q') && shouldPlayAudio.value) {
+      playAudio();
+      showAudioHint.value = true;
+      setTimeout(() => showAudioHint.value = false, 1200);
+      event.preventDefault();
+      event.stopImmediatePropagation(); // Ngăn không cho ký tự Q dính vào input
+      return;
+    }
+    // Ctrl+Space để kiểm tra hoặc qua câu mới
+    if (event.code === 'Space' && event.ctrlKey) {
+      if (!isCompleted.value) {
+        checkAnswer();
+        triggerToast('Đã kiểm tra đáp án (Ctrl+Space)');
+      } else {
+        nextSentence();
+        triggerToast('Đã chuyển sang câu tiếp theo (Ctrl+Space)');
+      }
+      event.preventDefault();
+    }
+    // Ctrl+S để chuyển tab Quản lý câu/học tập
+    if ((event.key === 's' || event.key === 'S')) {
+      showSentenceManager.value = !showSentenceManager.value;
+      triggerToast(showSentenceManager.value ? 'Chuyển sang Quản lý câu (Ctrl+S)' : 'Quay lại Học tập (Ctrl+S)');
+      event.preventDefault();
+    }
+  }
   if (isCompleted.value) return;
   
   // Xử lý phím Enter để kiểm tra hoặc chuyển câu tiếp theo
@@ -668,6 +759,12 @@ const loadSentencesFromLocal = () => {
 
 onMountedVue(() => {
   loadSentencesFromLocal();
+  // Mặc định mở chức năng Ctrl+2 khi vào
+  selectMode('listenEnglishTypeEnglish');
+  // Tự phát âm thanh khi vào
+  setTimeout(() => {
+    playAudio();
+  }, 500);
 });
 
 // Lắng nghe phím tắt
@@ -675,9 +772,9 @@ onMounted(() => {
   updateImageHint();
   // Lắng nghe phím tắt
   window.addEventListener('keydown', (e) => {
-    // Ctrl+1,2,3,4 để chuyển chế độ học
+    // Ctrl+1,2 để chuyển chế độ học, Ctrl+3,4,5 để chuyển mức độ khó
     if (e.ctrlKey && !e.shiftKey && !e.altKey) {
-      if (e.key === '1' || e.key === '2' || e.key === '3' || e.key === '4') {
+      if (e.key === '1' || e.key === '2') {
         const idx = Number(e.key) - 1;
         if (learningModes[idx]) {
           selectMode(learningModes[idx].id);
@@ -685,13 +782,39 @@ onMounted(() => {
           e.preventDefault();
         }
       }
-      // Ctrl+E để phát lại âm thanh
+      // Ctrl+3,4,5 để chuyển mức độ khó
+      if (e.key === '3' || e.key === '4' || e.key === '5') {
+        const levelIdx = { '3': 0, '4': 1, '5': 2 }[e.key];
+        if (difficultyLevels[levelIdx]) {
+          selectDifficulty(difficultyLevels[levelIdx].id);
+          triggerToast(`Độ khó: ${difficultyLevels[levelIdx].name} (${difficultyLevels[levelIdx].maskPercentage}%)`);
+          e.preventDefault();
+        }
+      }
+      // Ctrl+M để chuyển tab Quản lý câu
+      if ((e.key === 'm' || e.key === 'M')) {
+        showSentenceManager.value = !showSentenceManager.value;
+        triggerToast('Chuyển tab Quản lý câu (Ctrl+M)');
+        e.preventDefault();
+        return;
+      }
+      // Ctrl+B để quay lại màn hình chính
+      if ((e.key === 'b' || e.key === 'B')) {
+        if (showSentenceManager.value) {
+          showSentenceManager.value = false;
+          triggerToast('Quay lại màn hình chính (Ctrl+B)');
+          e.preventDefault();
+          return;
+        }
+      }
+      // Ctrl+Q để phát lại âm thanh
       if ((e.key === 'q' || e.key === 'Q') && shouldPlayAudio.value) {
         playAudio();
         showAudioHint.value = true;
         setTimeout(() => showAudioHint.value = false, 1200);
         e.preventDefault();
-        e.stopImmediatePropagation(); // Ngăn gọi playAudio lần 2
+        e.stopImmediatePropagation(); // Ngăn không cho ký tự Q dính vào input
+        return;
       }
       // Ctrl+Space để kiểm tra hoặc qua câu mới
       if (e.code === 'Space' && e.ctrlKey) {
