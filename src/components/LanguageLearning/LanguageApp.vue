@@ -31,6 +31,7 @@
             <li><b>Phím chuyển tab Quản lý câu:</b> <span class="font-mono bg-gray-100 px-2 rounded">Ctrl+M</span></li>
             <li><b>Phím qua câu tiếp theo:</b> <span class="font-mono bg-gray-100 px-2 rounded">Ctrl+Enter</span> hoặc <span class="font-mono bg-gray-100 px-2 rounded">Ctrl+Space</span></li>
             <li><b>Thêm từ nhanh:</b> Khi nhập từ mới, dùng dấu <span class="font-mono">.</span> để phân tách tiếng Anh và tiếng Việt, ví dụ: <span class="font-mono bg-gray-100 px-2 rounded">hello.xin chào</span> sẽ tự động thêm "hello" (Anh) và "xin chào" (Việt).</li>
+            <li><b>Phím tắt điều chỉnh tốc độ âm thanh:</b> <span class="font-mono bg-gray-100 px-2 rounded">Ctrl+D</span> (giảm tốc độ), <span class="font-mono bg-gray-100 px-2 rounded">Ctrl+F</span> (tăng tốc độ)</li>
           </ul>
         </div>
       </div>
@@ -105,13 +106,26 @@
               <div v-if="showSourceText" class="text-lg font-medium mb-2">
                 {{ isVietnameseSource ? currentSentence.vietnamese : currentSentence.eng }}
               </div>
-              <div v-if="shouldPlayAudio" class="flex items-center gap-2 relative">
+              <div v-if="shouldPlayAudio" class="flex items-center gap-4 relative">
   <button @click="playAudio" class="bg-blue-500 text-white p-2 rounded-full" @mouseenter="showAudioHint = true" @mouseleave="showAudioHint = false">
     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
     </svg>
   </button>
   <span class="text-sm text-gray-600">Nhấn để nghe</span>
+  <!-- Thanh trượt tốc độ phát âm -->
+  <div class="flex items-center gap-2 ml-2">
+    <input 
+      type="range" 
+      min="0" 
+      max="3" 
+      step="1"
+      v-model="speechSpeedIndex"
+      class="w-[100px] h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+      style="vertical-align: middle;"
+    />
+    <span class="text-xs font-medium min-w-[36px]">{{ speechSpeed }}x</span>
+  </div>
   <transition name="fade">
     <div v-if="showAudioHint" class="absolute left-1/2 top-full mt-2 -translate-x-1/2 bg-black text-white text-xs rounded px-2 py-1 z-20 shadow-lg whitespace-nowrap">
       Ctrl+Q để nghe lại
@@ -219,10 +233,12 @@
             Tỷ lệ đúng: {{ languageStore.progressPercentage }}% ({{ languageStore.userStats.correctAnswers }}/{{ languageStore.userStats.totalAttempts }})
           </div>
         </div>
-        </div> <!-- Đóng thẻ div cho v-else -->
+
+        
       </div>
     </div>
   </div>
+  </div>  
 </template>
 
 <script setup>
@@ -488,6 +504,7 @@ const updateImageHint = async () => {
   const url = await fetchImageForKeyword(keyword);
   imageHintUrl.value = url || '';
 };
+
 const nextSentence = async () => {
 
   // Hiệu ứng màu nền theo kết quả câu trước
@@ -505,27 +522,41 @@ const nextSentence = async () => {
 
 import { synthesizeSpeech } from '../../services/ttsService';
 
+const speechSpeed = ref(1); // 1 = bình thường
+const SPEED_LEVELS = [0.25, 0.5, 0.75, 1];
+
+const speechSpeedIndex = computed({
+  get: () => SPEED_LEVELS.indexOf(speechSpeed.value),
+  set: (val) => { speechSpeed.value = SPEED_LEVELS[val]; }
+});
+
+const adjustSpeed = (direction) => {
+  const currentIdx = SPEED_LEVELS.indexOf(speechSpeed.value);
+  let newIdx = currentIdx + (direction === 'up' ? 1 : -1);
+  newIdx = Math.max(0, Math.min(newIdx, SPEED_LEVELS.length - 1));
+  speechSpeed.value = SPEED_LEVELS[newIdx];
+  triggerToast(`Tốc độ: ${speechSpeed.value}x`);
+};
+
 const playAudio = async () => {
   const textToSpeak = currentMode.value.startsWith('listen') ?
     (currentMode.value === 'listenVietnameseTypeEnglish' ? currentSentence.value.vietnamese : currentSentence.value.eng) : '';
 
   if (!textToSpeak) return;
 
-  // Xác định ngôn ngữ
   const languageCode = currentMode.value === 'listenVietnameseTypeEnglish' ? 'vi-VN' : 'en-US';
 
   try {
-    // Sử dụng Google Cloud TTS
     const audioSrc = await synthesizeSpeech(textToSpeak, languageCode);
     const audio = new Audio(audioSrc);
     audio.volume = 1.0;
+    audio.playbackRate = speechSpeed.value; // Áp dụng tốc độ
     audio.play();
   } catch (error) {
-    // Nếu lỗi, fallback về Web Speech API
     try {
       const utterance = new SpeechSynthesisUtterance(textToSpeak);
       utterance.lang = languageCode;
-      utterance.rate = 0.9;
+      utterance.rate = 0.9 * speechSpeed.value; // Điều chỉnh rate theo tốc độ
       utterance.pitch = 1.0;
       utterance.volume = 1.0;
       speechSynthesis.speak(utterance);
@@ -782,6 +813,16 @@ onMounted(() => {
       if ((e.key === 's' || e.key === 'S')) {
         showSentenceManager.value = !showSentenceManager.value;
         triggerToast(showSentenceManager.value ? 'Chuyển sang Quản lý câu (Ctrl+S)' : 'Quay lại Học tập (Ctrl+S)');
+        e.preventDefault();
+      }
+      // Ctrl+D để giảm tốc độ âm thanh
+      if ((e.key === 'd' || e.key === 'D')) {
+        adjustSpeed('down');
+        e.preventDefault();
+      }
+      // Ctrl+F để tăng tốc độ âm thanh
+      if ((e.key === 'f' || e.key === 'F')) {
+        adjustSpeed('up');
         e.preventDefault();
       }
     }
