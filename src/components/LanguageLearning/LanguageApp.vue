@@ -537,68 +537,13 @@ const playAudio = async () => {
 
 // Xử lý sự kiện nhập liệu
 const handleKeyInput = (event) => {
-  // Không nhận phím Ctrl+1,2,3,4,5,S,B,M,Space,Enter khi đang typing
-  if (event.ctrlKey && !event.shiftKey && !event.altKey) {
-    if (event.key === '1' || event.key === '2') {
-      const idx = Number(event.key) - 1;
-      if (learningModes[idx]) {
-        selectMode(learningModes[idx].id);
-        triggerToast(`Chế độ: ${idx+1} - ${learningModes[idx].name}`);
-        event.preventDefault();
-      }
-    }
-    // Ctrl+3,4,5 để chuyển mức độ khó
-    if (event.key === '3' || event.key === '4' || event.key === '5') {
-      const levelIdx = { '3': 0, '4': 1, '5': 2 }[event.key];
-      if (difficultyLevels[levelIdx]) {
-        selectDifficulty(difficultyLevels[levelIdx].id);
-        triggerToast(`Độ khó: ${difficultyLevels[levelIdx].name} (${difficultyLevels[levelIdx].maskPercentage}%)`);
-        event.preventDefault();
-      }
-    }
-    // Ctrl+M để chuyển tab Quản lý câu
-    if ((event.key === 'm' || event.key === 'M')) {
-      showSentenceManager.value = !showSentenceManager.value;
-      triggerToast('Chuyển tab Quản lý câu (Ctrl+M)');
-      event.preventDefault();
-      return;
-    }
-    // Ctrl+B để quay lại màn hình chính
-    if ((event.key === 'b' || event.key === 'B')) {
-      if (showSentenceManager.value) {
-        showSentenceManager.value = false;
-        triggerToast('Quay lại màn hình chính (Ctrl+B)');
-        event.preventDefault();
-        return;
-      }
-    }
-    // Ctrl+Q để phát lại âm thanh
-    if ((event.key === 'q' || event.key === 'Q') && shouldPlayAudio.value) {
-      playAudio();
-      showAudioHint.value = true;
-      setTimeout(() => showAudioHint.value = false, 1200);
-      event.preventDefault();
-      event.stopImmediatePropagation(); // Ngăn không cho ký tự Q dính vào input
-      return;
-    }
-    // Ctrl+Space để kiểm tra hoặc qua câu mới
-    if (event.code === 'Space' && event.ctrlKey) {
-      if (!isCompleted.value) {
-        checkAnswer();
-        triggerToast('Đã kiểm tra đáp án (Ctrl+Space)');
-      } else {
-        nextSentence();
-        triggerToast('Đã chuyển sang câu tiếp theo (Ctrl+Space)');
-      }
-      event.preventDefault();
-    }
-    // Ctrl+S để chuyển tab Quản lý câu/học tập
-    if ((event.key === 's' || event.key === 'S')) {
-      showSentenceManager.value = !showSentenceManager.value;
-      triggerToast(showSentenceManager.value ? 'Chuyển sang Quản lý câu (Ctrl+S)' : 'Quay lại Học tập (Ctrl+S)');
-      event.preventDefault();
-    }
+  // Chặn tất cả phím Ctrl khi đang typing
+  if (event.ctrlKey) {
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    return;
   }
+
   if (isCompleted.value) return;
   
   // Xử lý phím Enter để kiểm tra hoặc chuyển câu tiếp theo
@@ -772,6 +717,10 @@ onMounted(() => {
   updateImageHint();
   // Lắng nghe phím tắt
   window.addEventListener('keydown', (e) => {
+    // Ignore global shortcuts when focus is in an input or textarea
+    const tag = e.target && e.target.tagName;
+    if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+    
     // Ctrl+1,2 để chuyển chế độ học, Ctrl+3,4,5 để chuyển mức độ khó
     if (e.ctrlKey && !e.shiftKey && !e.altKey) {
       if (e.key === '1' || e.key === '2') {
@@ -780,6 +729,7 @@ onMounted(() => {
           selectMode(learningModes[idx].id);
           triggerToast(`Chế độ: ${idx+1} - ${learningModes[idx].name}`);
           e.preventDefault();
+          e.stopImmediatePropagation();
         }
       }
       // Ctrl+3,4,5 để chuyển mức độ khó
@@ -789,6 +739,7 @@ onMounted(() => {
           selectDifficulty(difficultyLevels[levelIdx].id);
           triggerToast(`Độ khó: ${difficultyLevels[levelIdx].name} (${difficultyLevels[levelIdx].maskPercentage}%)`);
           e.preventDefault();
+          e.stopImmediatePropagation();
         }
       }
       // Ctrl+M để chuyển tab Quản lý câu
