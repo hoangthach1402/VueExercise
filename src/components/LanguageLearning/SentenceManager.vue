@@ -141,8 +141,7 @@ const handleBulkAdd = async () => {
   if (!bulkParagraph.value.trim()) return;
   isBulkLoading.value = true;
   // Tách câu đơn giản theo dấu chấm, chấm hỏi, chấm than
-  let sentencesArr = bulkParagraph.value
-    .split(/(?<=[.!?])\s+/)
+  let sentencesArr = (bulkParagraph.value.match(/[^.!?]+(?:[.!?]+|$)/g) || [])
     .map(s => s.trim())
     .filter(s => s.length > 0);
   for (const eng of sentencesArr) {
