@@ -22,18 +22,18 @@
         
         <!-- Các nút khác -->
         <div class="flex gap-4">
-          <button 
+          <!-- <button 
             @click="showHelp = true"
             class="px-4 py-2 bg-green-500 text-white rounded-md"
           >
             Help
-          </button>
-          <button 
+          </button> -->
+          <!-- <button 
             @click="showSentenceManager = !showSentenceManager"
             class="px-4 py-2 bg-blue-500 text-white rounded-md"
           >
             {{ showSentenceManager ? 'Quay lại học tập' : 'Quản lý câu' }}
-          </button>
+          </button> -->
         </div>
       </div>
       
