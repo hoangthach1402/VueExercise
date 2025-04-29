@@ -181,7 +181,7 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 // Google Translate Service
-import { useGoogleTranslate } from '../services/GoogleTranslateService'; // MAKE SURE PATH IS CORRECT
+import { useGoogleTranslate } from '../services/googleTranslateService'; // MAKE SURE PATH IS CORRECT
 
 // Chart.js imports
 import { Pie } from 'vue-chartjs';
