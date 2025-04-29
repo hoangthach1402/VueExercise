@@ -1,8 +1,7 @@
 <template>
   <div class="flex h-screen bg-gray-100">
     <div class="flex-grow relative border-r border-gray-300 overflow-y-auto h-full">
-      <div class="relative h-[calc(24*var(--hour-height))]">
-        <div
+      <div class="relative h-[calc(24*var(--hour-height))]"> <div
           v-for="hour in hours"
           :key="`hour-${hour}`"
           class="absolute left-0 w-full border-b border-gray-200 pointer-events-none"
@@ -133,6 +132,48 @@
          <p v-else class="text-sm text-gray-500 text-center">Chưa có dữ liệu thống kê.</p>
       </div>
 
+      <div class="border-t pt-4 mt-4">
+        <h3 class="text-lg font-semibold mb-2">Nhập nhiều công việc (JSON)</h3>
+        <textarea 
+          v-model="jsonInput" 
+          class="w-full p-2 border rounded-md text-sm mb-2 h-32" 
+          placeholder='[{"name":"Học Vue","type":"học","startTime":"08:00","duration":60},...]'
+        ></textarea>
+        <button 
+          @click="importFromJson" 
+          class="w-full py-2 px-4 bg-blue-500 text-white rounded-md hover:bg-blue-600"
+        >
+          Nhập công việc
+        </button>
+        <p v-if="jsonError" class="text-red-500 text-sm mt-2">{{ jsonError }}</p>
+        <div class="text-xs text-gray-500 mt-1">
+          <div class="flex justify-between items-center">
+            <p class="font-medium">Hướng dẫn nhập JSON:</p>
+            <button 
+              @click="copyExample"
+              class="text-blue-500 hover:text-blue-700 text-xs flex items-center"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+              </svg>
+              Copy mẫu
+            </button>
+          </div>
+          <ul class="list-disc pl-4 space-y-1 mt-1">
+            <li><span class="font-semibold">Các loại công việc:</span> học, giải trí tốt, giải trí xấu, thay thế, công việc, cá nhân</li>
+            <li><span class="font-semibold">Trường bắt buộc:</span> name (string), startTime ("HH:MM"), duration (number - phút)</li>
+            <li><span class="font-semibold">Trường tùy chọn:</span> type (string), color (hex color)</li>
+            <li><span class="font-semibold">Yêu cầu:</span> 
+              <ul class="list-disc pl-4">
+                <li>Thời gian không trùng lặp</li>
+                <li>Định dạng JSON hợp lệ</li>
+                <li>Sắp xếp theo thời gian tăng dần</li>
+              </ul>
+            </li>
+          </ul>
+        </div>
+      </div>
+
     </div>
   </div>
 </template>
@@ -179,6 +220,8 @@ const currentEditTask = ref(createDefaultTask());
 const previousNotifiedTask = ref(null);
 const notificationPermission = ref('default'); // Initialize as default
 const overlapError = ref(''); // Error message for form
+const jsonInput = ref('');
+const jsonError = ref('');
 
 // --- Computed Properties ---
 const hours = computed(() => Array.from({ length: 24 }, (_, i) => i));
@@ -466,6 +509,135 @@ function darkenColor(hex, percent = 20) {
     return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
 }
 
+function importFromJson() {
+  try {
+    const newTasks = JSON.parse(jsonInput.value);
+    if (!Array.isArray(newTasks)) {
+      throw new Error('Invalid JSON format. Expected an array of tasks.');
+    }
+    newTasks.forEach(task => {
+      if (!task.name || !task.type || !task.startTime || !task.duration) {
+        throw new Error('Invalid task format. Each task must have name, type, startTime, and duration.');
+      }
+      const existingTask = tasks.value.find(t => t.name === task.name && t.startTime === task.startTime);
+      if (existingTask) {
+        throw new Error(`Task with name "${task.name}" and start time "${task.startTime}" already exists.`);
+      }
+      tasks.value.push({ ...task, id: Date.now() });
+    });
+    saveTasks();
+    jsonInput.value = '';
+    jsonError.value = '';
+  } catch (error) {
+    jsonError.value = error.message;
+  }
+}
+
+function copyExample() {
+  const example = `[
+  {
+    "name": "Học Vue",
+    "type": "học",
+    "startTime": "10:00",
+    "duration": 30,
+    "color": "#3b82f6"
+  },
+  {
+    "name": "Nghỉ ngắn",
+    "type": "cá nhân",
+    "startTime": "10:30",
+    "duration": 10,
+    "color": "#6b7280"
+  },
+  {
+    "name": "Đọc sách",
+    "type": "giải trí tốt",
+    "startTime": "10:40",
+    "duration": 25,
+    "color": "#22c55e"
+  },
+  {
+    "name": "Ăn trưa",
+    "type": "cá nhân",
+    "startTime": "12:00",
+    "duration": 60,
+    "color": "#ec4899"
+  },
+  {
+    "name": "Học JavaScript",
+    "type": "học",
+    "startTime": "13:00",
+    "duration": 30,
+    "color": "#3b82f6"
+  },
+  {
+    "name": "Nghỉ ngắn",
+    "type": "cá nhân",
+    "startTime": "13:30",
+    "duration": 10,
+    "color": "#6b7280"
+  },
+  {
+    "name": "Làm bài tập",
+    "type": "học",
+    "startTime": "13:40",
+    "duration": 30,
+    "color": "#3b82f6"
+  },
+  {
+    "name": "Nghỉ chiều",
+    "type": "cá nhân",
+    "startTime": "14:10",
+    "duration": 20,
+    "color": "#6b7280"
+  },
+  {
+    "name": "Đọc sách kỹ thuật",
+    "type": "giải trí tốt",
+    "startTime": "14:30",
+    "duration": 25,
+    "color": "#22c55e"
+  },
+  {
+    "name": "Học CSS",
+    "type": "học",
+    "startTime": "15:00",
+    "duration": 30,
+    "color": "#3b82f6"
+  },
+  {
+    "name": "Nghỉ ngắn",
+    "type": "cá nhân",
+    "startTime": "15:30",
+    "duration": 10,
+    "color": "#6b7280"
+  },
+  {
+    "name": "Ôn tập",
+    "type": "học",
+    "startTime": "15:40",
+    "duration": 25,
+    "color": "#3b82f6"
+  },
+  {
+    "name": "Kết thúc ngày",
+    "type": "cá nhân",
+    "startTime": "16:05",
+    "duration": 5,
+    "color": "#ec4899"
+  }
+]`;
+  
+  navigator.clipboard.writeText(example)
+    .then(() => {
+      jsonError.value = 'Đã copy lịch mẫu vào clipboard!';
+      setTimeout(() => jsonError.value = '', 3000);
+    })
+    .catch(err => {
+      jsonError.value = 'Lỗi khi copy: ' + err.message;
+    });
+}
+
 // --- Lifecycle Hooks and Watchers ---
 let timerInterval = null;
 
@@ -486,21 +658,23 @@ onUnmounted(() => {
 
 watch(currentTask, (newTask) => {
   if (newTask && newTask.id !== previousNotifiedTask.value?.id) {
-    const notificationText = `Bắt đầu: ${newTask.name}`;
-    const notificationBody = `Lúc ${newTask.startTime}, thời gian làm ${newTask.duration} phút.`;
-    // Specify Vietnamese language ('vi') for speech
-    const speechText = `Bắt đầu ${newTask.name} lúc ${newTask.startTime}, thời gian làm ${newTask.duration} phút`;
+    const notificationText = `Bắt đầu công việc: ${newTask.name}`;
+    const notificationBody = `Thời gian: ${newTask.startTime} - ${getEndTime(newTask)} (${newTask.duration} phút)`;
+    const speechText = `Bắt đầu công việc ${newTask.name} lúc ${newTask.startTime}, thời lượng ${newTask.duration} phút`;
 
     if (notificationPermission.value === 'granted') {
         try {
-            new Notification(notificationText, { body: notificationBody, tag: `task-${newTask.id}` /* Use tag to replace old notifications */ });
-        } catch(e) { console.error("Notification failed:", e); }
+            new Notification(notificationText, { 
+                body: notificationBody,
+                tag: `task-${newTask.id}`
+            });
+        } catch(e) { console.error("Lỗi thông báo:", e); }
     }
 
     try {
-      speak(speechText, 'vi'); // Pass 'vi' for Vietnamese
+      speak(speechText, 'vi');
     } catch (error) {
-      console.warn('Could not speak notification:', error);
+      console.warn('Không thể đọc thông báo:', error);
     }
 
     previousNotifiedTask.value = newTask;

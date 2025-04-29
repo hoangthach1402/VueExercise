@@ -6,7 +6,20 @@ export function useGoogleTranslate() {
       // First try browser's built-in speech synthesis
       if ('speechSynthesis' in window) {
         const utterance = new SpeechSynthesisUtterance(text);
-        utterance.lang = 'vi-VN';
+        
+        // Set Vietnamese voice if available
+        const voices = window.speechSynthesis.getVoices();
+        const vietnameseVoice = voices.find(voice => 
+          voice.lang === 'vi-VN' || voice.lang.startsWith('vi-')
+        );
+        
+        if (vietnameseVoice) {
+          utterance.voice = vietnameseVoice;
+          utterance.lang = 'vi-VN';
+        } else {
+          console.warn('Vietnamese voice not available, using default');
+        }
+        
         window.speechSynthesis.speak(utterance);
         return;
       }
