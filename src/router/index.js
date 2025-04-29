@@ -1,23 +1,31 @@
 // src/router/index.js
 import { createRouter, createWebHistory } from 'vue-router';
-import HomeView from '../views/HomeView.vue';
-import TaskDetailsView from '../views/TaskDetailsView.vue'; // Sẽ tạo sau
+import LanguageApp from '../components/LanguageLearning/LanguageApp.vue';
+import TimelineView from '../views/TimelineView.vue';
+import HabitView from '../views/HabitView.vue';
 
 const routes = [
   {
     path: '/',
-    name: 'Home',
-    component: HomeView,
+    name: 'home',
+    component: LanguageApp,
+    // Không cần redirect vì đã trỏ trực tiếp đến LanguageApp
   },
-  {
-    // :id là tham số động, chứa ID của task
-    path: '/task/:id',
-    name: 'TaskDetails',
-    component: TaskDetailsView,
-    props: true, // Tự động truyền route params (id) thành props cho component
+  { 
+    path: '/learning', 
+    name: 'learning', 
+    component: LanguageApp 
   },
-  // Optional: Redirect nếu route không khớp
-  // { path: '/:pathMatch(.*)*', redirect: '/' }
+  { 
+    path: '/timeline', 
+    name: 'timeline', 
+    component: TimelineView 
+  },
+  { 
+    path: '/habit', 
+    name: 'habit', 
+    component: HabitView 
+  },
 ];
 
 const router = createRouter({

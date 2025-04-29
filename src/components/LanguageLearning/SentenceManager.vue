@@ -106,7 +106,7 @@
         <div class="bg-white p-3 rounded-md shadow-sm">
           <p class="text-sm text-gray-500">Tỷ lệ đúng</p>
           <p class="text-2xl font-bold">{{ progressPercentage }}%</p>
-        </div>
+        </div>ư
       </div>
     </div>
   </div>

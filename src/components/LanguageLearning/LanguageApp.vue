@@ -1,41 +1,8 @@
 <template>
   <div class="language-app bg-gray-100 min-h-screen p-4">
     <div class="max-w-4xl mx-auto bg-white rounded-lg shadow-lg overflow-hidden">
-      <!-- Menu điều hướng mới -->
-      <div class="flex items-center justify-between p-4 border-b">
-        <div class="flex gap-2">
-          <button 
-            @click="activeTab = 'learning'"
-            :class="activeTab === 'learning' ? 'bg-blue-500 text-white' : 'bg-gray-200'"
-            class="px-4 py-2 rounded-md"
-          >
-            Học tập
-          </button>
-          <button 
-            @click="activeTab = 'timeline'"
-            :class="activeTab === 'timeline' ? 'bg-blue-500 text-white' : 'bg-gray-200'"
-            class="px-4 py-2 rounded-md"
-          >
-            Timeline
-          </button>
-        </div>
-        
-        <!-- Các nút khác -->
-        <div class="flex gap-4">
-          <!-- <button 
-            @click="showHelp = true"
-            class="px-4 py-2 bg-green-500 text-white rounded-md"
-          >
-            Help
-          </button> -->
-          <!-- <button 
-            @click="showSentenceManager = !showSentenceManager"
-            class="px-4 py-2 bg-blue-500 text-white rounded-md"
-          >
-            {{ showSentenceManager ? 'Quay lại học tập' : 'Quản lý câu' }}
-          </button> -->
-        </div>
-      </div>
+      <!-- Sử dụng component LanguageNav -->
+      <LanguageNav :activeTab="activeTab" @tab-change="setActiveTab" />
       
       <!-- Nội dung theo tab -->
       <div class="p-6">
@@ -282,15 +249,40 @@
     <!-- Giao diện timeline -->
     <TimelineView />
   </div>
+  <div v-if="activeTab === 'habit'">
+    <HabitView />
+    <!-- Giao diện habit -->
+    <!-- Add your habit tab content here -->
+  </div>
   </div>
   </div>  
   </div>
 </template>
 
 <script setup>
-import { ref, computed , onMounted, onUnmounted} from 'vue';
-import TimelineView from '../../views/TimelineView.vue';
-import { fetchImageForKeyword } from '../../services/imageSearchService';
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
+
+const route = useRoute();
+const router = useRouter();
+
+const activeTab = ref('learning');
+
+// Sync active tab with route
+watch(() => route?.name, (routeName) => {
+  if (!routeName) return;
+  if (routeName === 'timeline') activeTab.value = 'timeline';
+  else if (routeName === 'habit') activeTab.value = 'habit';
+  else activeTab.value = 'learning';
+}, { immediate: true });
+
+// Update route when tab changes
+const setActiveTab = (tab) => {
+  activeTab.value = tab;
+  if (tab === 'timeline') router.push('/timeline');
+  else if (tab === 'habit') router.push('/habit');
+  else router.push('/');
+};
 
 // Hiển thị tooltip/toast cho nút âm thanh
 const showAudioHint = ref(false);
@@ -881,8 +873,6 @@ onMounted(() => {
     window.removeEventListener('keydown', handleKeyInput);
   });
 });
-
-const activeTab = ref('learning');
 </script>
 
 <style scoped>
