@@ -1,112 +1,151 @@
 <template>
   <div class="language-app bg-gray-100 min-h-screen p-4">
     <div class="max-w-4xl mx-auto bg-white rounded-lg shadow-lg overflow-hidden">
-      <!-- Nút chuyển đổi giữa học tập và quản lý câu -->
-      <!-- Header với nút Quản lý câu nổi bật -->
-      <div class="flex items-center justify-end gap-4 mb-6">
-        <button 
-          @click="showHelp = true"
-          @mouseenter="triggerToast('Phím tắt: H')"
-          class="px-5 py-3 text-lg font-bold bg-gradient-to-r from-green-400 to-green-600 text-white rounded-xl shadow hover:from-green-500 hover:to-green-700 transition-all duration-200 focus:outline-none focus:ring-4 focus:ring-green-200"
-        >
-          Help
-        </button>
-        <button 
-          @click="showSentenceManager = !showSentenceManager"
-          @mouseenter="triggerToast('Phím tắt: Ctrl+M')"
-          class="px-6 py-3 text-lg font-bold bg-gradient-to-r from-blue-500 to-blue-700 text-white rounded-xl shadow hover:from-blue-600 hover:to-blue-800 transition-all duration-200 focus:outline-none focus:ring-4 focus:ring-blue-200"
-        >
-          {{ showSentenceManager ? 'Quay lại học tập' : 'Quản lý câu' }}
-        </button>
-      </div>
-      <!-- Sheet Help -->
-      <div v-if="showHelp" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
-        <div class="bg-white rounded-xl shadow-lg max-w-lg w-full p-8 relative animate-fade-in">
-          <button @click="showHelp = false" class="absolute top-2 right-2 text-2xl text-gray-500 hover:text-red-500">&times;</button>
-          <h2 class="text-2xl font-bold mb-4 text-blue-700">Hướng dẫn sử dụng</h2>
-          <ul class="list-disc pl-6 space-y-2 text-base text-gray-700">
-            <li><b>Phím tắt chuyển chế độ học:</b> <span class="font-mono bg-gray-100 px-2 rounded">Ctrl+1</span> (Nghe Việt), <span class="font-mono bg-gray-100 px-2 rounded">Ctrl+2</span> (Nghe Anh)</li>
-            <li><b>Phím tắt chuyển mức độ khó:</b> <span class="font-mono bg-gray-100 px-2 rounded">Ctrl+3</span> (25%), <span class="font-mono bg-gray-100 px-2 rounded">Ctrl+4</span> (50%), <span class="font-mono bg-gray-100 px-2 rounded">Ctrl+5</span> (75%)</li>
-            <li><b>Phím nghe lại câu:</b> <span class="font-mono bg-gray-100 px-2 rounded">Ctrl+Q</span></li>
-            <li><b>Phím chuyển tab Quản lý câu:</b> <span class="font-mono bg-gray-100 px-2 rounded">Ctrl+M</span></li>
-            <li><b>Phím qua câu tiếp theo:</b> <span class="font-mono bg-gray-100 px-2 rounded">Ctrl+Enter</span> hoặc <span class="font-mono bg-gray-100 px-2 rounded">Ctrl+Space</span></li>
-            <li><b>Thêm từ nhanh:</b> Khi nhập từ mới, dùng dấu <span class="font-mono">.</span> để phân tách tiếng Anh và tiếng Việt, ví dụ: <span class="font-mono bg-gray-100 px-2 rounded">hello.xin chào</span> sẽ tự động thêm "hello" (Anh) và "xin chào" (Việt).</li>
-            <li><b>Phím tắt điều chỉnh tốc độ âm thanh:</b> <span class="font-mono bg-gray-100 px-2 rounded">Ctrl+D</span> (giảm tốc độ), <span class="font-mono bg-gray-100 px-2 rounded">Ctrl+F</span> (tăng tốc độ)</li>
-          </ul>
+      <!-- Menu điều hướng mới -->
+      <div class="flex items-center justify-between p-4 border-b">
+        <div class="flex gap-2">
+          <button 
+            @click="activeTab = 'learning'"
+            :class="activeTab === 'learning' ? 'bg-blue-500 text-white' : 'bg-gray-200'"
+            class="px-4 py-2 rounded-md"
+          >
+            Học tập
+          </button>
+          <button 
+            @click="activeTab = 'timeline'"
+            :class="activeTab === 'timeline' ? 'bg-blue-500 text-white' : 'bg-gray-200'"
+            class="px-4 py-2 rounded-md"
+          >
+            Timeline
+          </button>
         </div>
-      </div>
-      <div class="p-6">
-
-        <!-- Hiển thị SentenceManager hoặc giao diện học tập -->
-        <SentenceManager v-if="showSentenceManager" />
         
-        <div v-else>
-        <!-- Layout chia 2 bên: trái là chế độ học + độ khó, phải là hình ảnh -->
-        <div class="flex flex-row gap-8 items-start mb-6">
-          <!-- Bên trái: chế độ học + độ khó -->
-          <div class="flex flex-col gap-6 flex-1 min-w-0">
-            <!-- Chọn chế độ học -->
-            <div>
-              <h2 class="text-lg font-semibold mb-3">Chọn chế độ học:</h2>
-              <div class="flex flex-wrap gap-2">
-                <button 
-                  v-for="(mode, idx) in learningModes" 
-                  :key="mode.id"
-                  @click="selectMode(mode.id)"
-                  @mouseenter="triggerToast('Phím tắt: Ctrl+' + (idx+1))"
-                  :class="[
-                    'px-4 py-2 rounded-md transition-colors border-2',
-                    currentMode === mode.id 
-                      ? 'bg-blue-700 text-white border-blue-900 shadow font-bold' 
-                      : 'bg-gray-200 hover:bg-gray-300 text-gray-800 border-gray-300'
-                  ]"
-                >
-                  <span class="font-bold mr-1">{{ idx + 1 }}</span> {{ mode.name }}
-                </button>
-              </div>
-            </div>
-            <!-- Chọn độ khó -->
-            <div>
-              <h2 class="text-lg font-semibold mb-3">Độ khó:</h2>
-              <div class="flex flex-wrap gap-2">
-                <button 
-                  v-for="(level, idx) in difficultyLevels" 
-                  :key="level.id"
-                  @click="selectDifficulty(level.id)"
-                  @mouseenter="triggerToast('Phím tắt: Ctrl+' + (idx+3))"
-                  :class="[
-                    'px-4 py-2 rounded-md transition-colors border-2',
-                    currentDifficulty === level.id 
-                      ? 'bg-green-700 text-white border-green-900 shadow font-bold' 
-                      : 'bg-gray-200 hover:bg-gray-300 text-gray-800 border-gray-300'
-                  ]"
-                >
-                  {{ level.name }} ({{ level.maskPercentage }}%)
-                </button>
-              </div>
-            </div>
-          </div>
-          <!-- Bên phải: hình ảnh minh họa -->
-          <div v-if="imageHintUrl" class="flex-1 flex justify-center items-start min-w-[120px] max-w-[220px]">
-            <img :src="imageHintUrl" alt="Gợi ý hình ảnh" class="w-full max-h-40 rounded-xl shadow border-2 border-blue-300 object-contain bg-white p-1"/>
-          </div>
+        <!-- Các nút khác -->
+        <div class="flex gap-4">
+          <button 
+            @click="showHelp = true"
+            class="px-4 py-2 bg-green-500 text-white rounded-md"
+          >
+            Help
+          </button>
+          <button 
+            @click="showSentenceManager = !showSentenceManager"
+            class="px-4 py-2 bg-blue-500 text-white rounded-md"
+          >
+            {{ showSentenceManager ? 'Quay lại học tập' : 'Quản lý câu' }}
+          </button>
         </div>
+      </div>
+      
+      <!-- Nội dung theo tab -->
+      <div class="p-6">
+        <div v-if="activeTab === 'learning'">
+          <!-- Nút chuyển đổi giữa học tập và quản lý câu -->
+          <!-- Header với nút Quản lý câu nổi bật -->
+          <div class="flex items-center justify-end gap-4 mb-6">
+            <button 
+              @click="showHelp = true"
+              @mouseenter="triggerToast('Phím tắt: H')"
+              class="px-5 py-3 text-lg font-bold bg-gradient-to-r from-green-400 to-green-600 text-white rounded-xl shadow hover:from-green-500 hover:to-green-700 transition-all duration-200 focus:outline-none focus:ring-4 focus:ring-green-200"
+            >
+              Help
+            </button>
+            <button 
+              @click="showSentenceManager = !showSentenceManager"
+              @mouseenter="triggerToast('Phím tắt: Ctrl+M')"
+              class="px-6 py-3 text-lg font-bold bg-gradient-to-r from-blue-500 to-blue-700 text-white rounded-xl shadow hover:from-blue-600 hover:to-blue-800 transition-all duration-200 focus:outline-none focus:ring-4 focus:ring-blue-200"
+            >
+              {{ showSentenceManager ? 'Quay lại học tập' : 'Quản lý câu' }}
+            </button>
+          </div>
+          <!-- Sheet Help -->
+          <div v-if="showHelp" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+            <div class="bg-white rounded-xl shadow-lg max-w-lg w-full p-8 relative animate-fade-in">
+              <button @click="showHelp = false" class="absolute top-2 right-2 text-2xl text-gray-500 hover:text-red-500">&times;</button>
+              <h2 class="text-2xl font-bold mb-4 text-blue-700">Hướng dẫn sử dụng</h2>
+              <ul class="list-disc pl-6 space-y-2 text-base text-gray-700">
+                <li><b>Phím tắt chuyển chế độ học:</b> <span class="font-mono bg-gray-100 px-2 rounded">Ctrl+1</span> (Nghe Việt), <span class="font-mono bg-gray-100 px-2 rounded">Ctrl+2</span> (Nghe Anh)</li>
+                <li><b>Phím tắt chuyển mức độ khó:</b> <span class="font-mono bg-gray-100 px-2 rounded">Ctrl+3</span> (25%), <span class="font-mono bg-gray-100 px-2 rounded">Ctrl+4</span> (50%), <span class="font-mono bg-gray-100 px-2 rounded">Ctrl+5</span> (75%)</li>
+                <li><b>Phím nghe lại câu:</b> <span class="font-mono bg-gray-100 px-2 rounded">Ctrl+Q</span></li>
+                <li><b>Phím chuyển tab Quản lý câu:</b> <span class="font-mono bg-gray-100 px-2 rounded">Ctrl+M</span></li>
+                <li><b>Phím qua câu tiếp theo:</b> <span class="font-mono bg-gray-100 px-2 rounded">Ctrl+Enter</span> hoặc <span class="font-mono bg-gray-100 px-2 rounded">Ctrl+Space</span></li>
+                <li><b>Thêm từ nhanh:</b> Khi nhập từ mới, dùng dấu <span class="font-mono">.</span> để phân tách tiếng Anh và tiếng Việt, ví dụ: <span class="font-mono bg-gray-100 px-2 rounded">hello.xin chào</span> sẽ tự động thêm "hello" (Anh) và "xin chào" (Việt).</li>
+                <li><b>Phím tắt điều chỉnh tốc độ âm thanh:</b> <span class="font-mono bg-gray-100 px-2 rounded">Ctrl+D</span> (giảm tốc độ), <span class="font-mono bg-gray-100 px-2 rounded">Ctrl+F</span> (tăng tốc độ)</li>
+              </ul>
+            </div>
+          </div>
+          <div class="p-6">
 
-        <!-- Hiển thị câu và bài tập -->
-        <div class="p-4 rounded-lg mb-6 transition-colors duration-700"
+            <!-- Hiển thị SentenceManager hoặc giao diện học tập -->
+            <SentenceManager v-if="showSentenceManager" />
+            
+            <div v-else>
+            <!-- Layout chia 2 bên: trái là chế độ học + độ khó, phải là hình ảnh -->
+            <div class="flex flex-row gap-8 items-start mb-6">
+              <!-- Bên trái: chế độ học + độ khó -->
+              <div class="flex flex-col gap-6 flex-1 min-w-0">
+                <!-- Chọn chế độ học -->
+                <div>
+                  <h2 class="text-lg font-semibold mb-3">Chọn chế độ học:</h2>
+                  <div class="flex flex-wrap gap-2">
+                    <button 
+                      v-for="(mode, idx) in learningModes" 
+                      :key="mode.id"
+                      @click="selectMode(mode.id)"
+                      @mouseenter="triggerToast('Phím tắt: Ctrl+' + (idx+1))"
+                      :class="[
+                        'px-4 py-2 rounded-md transition-colors border-2',
+                        currentMode === mode.id 
+                          ? 'bg-blue-700 text-white border-blue-900 shadow font-bold' 
+                          : 'bg-gray-200 hover:bg-gray-300 text-gray-800 border-gray-300'
+                      ]"
+                    >
+                      <span class="font-bold mr-1">{{ idx + 1 }}</span> {{ mode.name }}
+                    </button>
+                  </div>
+                </div>
+                <!-- Chọn độ khó -->
+                <div>
+                  <h2 class="text-lg font-semibold mb-3">Độ khó:</h2>
+                  <div class="flex flex-wrap gap-2">
+                    <button 
+                      v-for="(level, idx) in difficultyLevels" 
+                      :key="level.id"
+                      @click="selectDifficulty(level.id)"
+                      @mouseenter="triggerToast('Phím tắt: Ctrl+' + (idx+3))"
+                      :class="[
+                        'px-4 py-2 rounded-md transition-colors border-2',
+                        currentDifficulty === level.id 
+                          ? 'bg-green-700 text-white border-green-900 shadow font-bold' 
+                          : 'bg-gray-200 hover:bg-gray-300 text-gray-800 border-gray-300'
+                      ]"
+                    >
+                      {{ level.name }} ({{ level.maskPercentage }}%)
+                    </button>
+                  </div>
+                </div>
+              </div>
+              <!-- Bên phải: hình ảnh minh họa -->
+              <div v-if="imageHintUrl" class="flex-1 flex justify-center items-start min-w-[120px] max-w-[220px]">
+                <img :src="imageHintUrl" alt="Gợi ý hình ảnh" class="w-full max-h-40 rounded-xl shadow border-2 border-blue-300 object-contain bg-white p-1"/>
+              </div>
+            </div>
+
+            <!-- Hiển thị câu và bài tập -->
+            <div class="p-4 rounded-lg mb-6 transition-colors duration-700"
   :class="[
     feedbackBg === 'success' ? 'bg-blue-100' : '',
     feedbackBg === 'fail' ? 'bg-red-100' : '',
     !feedbackBg ? 'bg-gray-50' : ''
   ]"
 >
-          <div v-if="currentSentence" class="mb-4">
-            <!-- Hiển thị câu gốc hoặc phát âm thanh tùy theo chế độ -->
-            <div class="mb-4">
-              <div v-if="showSourceText" class="text-lg font-medium mb-2">
-                {{ isVietnameseSource ? currentSentence.vietnamese : currentSentence.eng }}
-              </div>
-              <div v-if="shouldPlayAudio" class="flex items-center gap-4 relative">
+              <div v-if="currentSentence" class="mb-4">
+                <!-- Hiển thị câu gốc hoặc phát âm thanh tùy theo chế độ -->
+                <div class="mb-4">
+                  <div v-if="showSourceText" class="text-lg font-medium mb-2">
+                    {{ isVietnameseSource ? currentSentence.vietnamese : currentSentence.eng }}
+                  </div>
+                  <div v-if="shouldPlayAudio" class="flex items-center gap-4 relative">
   <button @click="playAudio" class="bg-blue-500 text-white p-2 rounded-full" @mouseenter="showAudioHint = true" @mouseleave="showAudioHint = false">
     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
@@ -237,13 +276,20 @@
         
       </div>
     </div>
+    
+  </div>
+  <div v-if="activeTab === 'timeline'">
+    <!-- Giao diện timeline -->
+    <TimelineView />
+  </div>
   </div>
   </div>  
+  </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue';
-const showHelp = ref(false);
+import { ref, computed , onMounted, onUnmounted} from 'vue';
+import TimelineView from '../../views/TimelineView.vue';
 import { fetchImageForKeyword } from '../../services/imageSearchService';
 
 // Hiển thị tooltip/toast cho nút âm thanh
@@ -835,6 +881,8 @@ onMounted(() => {
     window.removeEventListener('keydown', handleKeyInput);
   });
 });
+
+const activeTab = ref('learning');
 </script>
 
 <style scoped>
