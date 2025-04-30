@@ -6,16 +6,22 @@ import router from './router';
 // @import "tailwindcss";
 import '../src/style.css'; // Optional: base styles
 
-import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { createPinia } from 'pinia'
+import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
+import { createPinia } from 'pinia';
+import { useAuthStore } from '../src/stores/authStore'; // Import auth store
 
 const app = createApp(App);
 
 const pinia = createPinia();
 app.use(pinia);
 
-app.use(router);
+// Khởi tạo auth store sau khi pinia được sử dụng
+const authStore = useAuthStore();
 
-app.component('font-awesome-icon', FontAwesomeIcon)
-
-app.mount('#app');
+// Kiểm tra trạng thái xác thực khi ứng dụng tải
+// Sử dụng Promise để đảm bảo checkAuth hoàn thành trước khi mount app
+authStore.checkAuth().then(() => {
+  app.use(router);
+  app.component('font-awesome-icon', FontAwesomeIcon);
+  app.mount('#app');
+});
