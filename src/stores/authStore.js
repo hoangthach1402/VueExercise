@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia';
 import axios from 'axios';
-import router from '../router'; // Import router để điều hướng
+import router from '@/router'; // Import router để điều hướng
 
 // Định nghĩa URL cơ sở cho API của bạn
 const API_BASE_URL = 'https://laravelbackend-main-pfitfw.laravel.cloud/api';

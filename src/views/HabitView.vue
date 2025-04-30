@@ -2,7 +2,20 @@
   <div class="p-4 md:p-6 lg:p-8 max-w-4xl mx-auto bg-gray-50 min-h-screen font-sans">
     <h1 class="text-3xl font-bold text-center mb-8 text-gray-800">Theo Dõi Thói Quen</h1>
 
-    <div class="mb-8 p-4 bg-white rounded-lg shadow">
+    <!-- Loading indicator -->
+    <div v-if="isLoading" class="flex justify-center items-center py-8">
+      <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
+    </div>
+
+    <!-- Error message -->
+    <div v-if="error" class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-6">
+      <p>{{ error }}</p>
+      <button @click="loadData" class="mt-2 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700">
+        Thử lại
+      </button>
+    </div>
+
+    <div v-if="!isLoading" class="mb-8 p-4 bg-white rounded-lg shadow">
       <h2 class="text-xl font-semibold mb-3 text-gray-700">Thêm Thói Quen Mới</h2>
       <div class="flex flex-col sm:flex-row gap-3">
         <input
@@ -27,15 +40,15 @@
         />
         <button
           @click="addHabit"
-          :disabled="!newHabit.name || !newHabit.targetDays || !newHabit.startDate"
+          :disabled="!newHabit.name || !newHabit.targetDays || !newHabit.startDate || isSubmitting"
           class="px-4 py-2 bg-indigo-600 text-white font-semibold rounded-md shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          Thêm
+          {{ isSubmitting ? 'Đang thêm...' : 'Thêm' }}
         </button>
       </div>
     </div>
 
-    <div class="space-y-6 mb-12">
+    <div v-if="!isLoading" class="space-y-6 mb-12">
       <h2 class="text-2xl font-semibold mb-4 text-gray-700">Đang Thực Hiện</h2>
        <p v-if="activeHabits.length === 0" class="text-gray-500 italic">Chưa có thói quen nào đang theo dõi.</p>
       <div v-for="habit in activeHabits" :key="habit.id" class="bg-white rounded-lg shadow p-4 transition-all duration-300 hover:shadow-md">
@@ -55,7 +68,7 @@
 
         <div class="mb-3">
            <div class="text-sm text-gray-600 mb-1 flex justify-between">
-             <span>Tiến độ: {{ habit.checkedDays.length }} / {{ habit.targetDays }} ngày</span>
+             <span>Tiến độ: {{ habit.progress?.length || 0 }} / {{ habit.targetDays }} ngày</span>
              <span>{{ calculateProgress(habit).toFixed(0) }}%</span>
            </div>
            <div class="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700 overflow-hidden">
@@ -71,11 +84,11 @@
           <div v-for="dayNum in habit.targetDays" :key="dayNum" class="flex flex-col items-center">
              <button
                @click="toggleCheckDay(habit.id, dayNum)"
-               :disabled="!isCheckable(habit, dayNum)"
+               :disabled="!isCheckable(habit, dayNum) || isUpdatingProgress"
                :class="[
                  'w-7 h-7 rounded-full border flex items-center justify-center transition-all duration-200 text-xs',
                  getDayStatusClass(habit, dayNum),
-                 isCheckable(habit, dayNum) ? 'cursor-pointer hover:opacity-80' : 'cursor-not-allowed opacity-60'
+                 isCheckable(habit, dayNum) && !isUpdatingProgress ? 'cursor-pointer hover:opacity-80' : 'cursor-not-allowed opacity-60'
                ]"
                :title="getDayTitle(habit, dayNum)"
              >
@@ -93,7 +106,7 @@
       </div>
     </div>
 
-    <div class="space-y-4">
+    <div v-if="!isLoading" class="space-y-4">
       <h2 class="text-2xl font-semibold mb-4 text-gray-700">Thành Tựu Đã Đạt Được</h2>
        <p v-if="achievements.length === 0" class="text-gray-500 italic">Chưa có thành tựu nào được ghi nhận.</p>
       <div v-for="achievement in achievements" :key="achievement.id" class="bg-green-50 border border-green-200 rounded-lg shadow-sm p-3 flex justify-between items-center">
@@ -115,10 +128,16 @@
 
 <script setup>
 import { ref, reactive, onMounted, computed } from 'vue';
+import habitService from '@/services/habitService';
 
 // --- State ---
 const habits = ref([]);
 const achievements = ref([]);
+const isLoading = ref(false);
+const isSubmitting = ref(false);
+const isUpdatingProgress = ref(false);
+const error = ref(null);
+
 const newHabit = reactive({
   name: '',
   startDate: '', // Will be set to today initially
@@ -129,34 +148,28 @@ const today = new Date();
 today.setHours(0, 0, 0, 0); // Normalize today's date
 const todayIsoDate = today.toISOString().split('T')[0];
 
-// --- Persistence (localStorage) ---
-const HABIT_STORAGE_KEY = 'habitTrackerData_v1';
-const ACHIEVEMENT_STORAGE_KEY = 'habitAchievements_v1';
-
-function loadData() {
-  const storedHabits = localStorage.getItem(HABIT_STORAGE_KEY);
-  const storedAchievements = localStorage.getItem(ACHIEVEMENT_STORAGE_KEY);
-  habits.value = storedHabits ? JSON.parse(storedHabits) : [];
-  achievements.value = storedAchievements ? JSON.parse(storedAchievements) : [];
-
-  // Add default habits if empty (first load example)
-  if (habits.value.length === 0 && achievements.value.length === 0) {
-     habits.value.push({
-         id: Date.now() + '_smoke', name: 'Bỏ thuốc', startDate: '2025-04-27', targetDays: 7, checkedDays: [], completed: false
-     });
-     habits.value.push({
-         id: Date.now() + '_mast', name: 'Bỏ thủ dâm', startDate: '2025-04-27', targetDays: 7, checkedDays: [], completed: false
-     });
-     saveData(); // Save defaults
+// --- API Integration ---
+async function loadData() {
+  isLoading.value = true;
+  error.value = null;
+  
+  try {
+    // Fetch habits from API
+    const habitsData = await habitService.getAllHabits();
+    habits.value = habitsData;
+    
+    // Fetch achievements from API
+    const achievementsData = await habitService.getAchievements();
+    achievements.value = achievementsData;
+    
+    // Set default start date for new habit form
+    newHabit.startDate = todayIsoDate;
+  } catch (err) {
+    console.error('Error loading data:', err);
+    error.value = 'Không thể tải dữ liệu. Vui lòng thử lại sau.';
+  } finally {
+    isLoading.value = false;
   }
-
-  // Set default start date for new habit form
-  newHabit.startDate = todayIsoDate;
-}
-
-function saveData() {
-  localStorage.setItem(HABIT_STORAGE_KEY, JSON.stringify(habits.value));
-  localStorage.setItem(ACHIEVEMENT_STORAGE_KEY, JSON.stringify(achievements.value));
 }
 
 // --- Lifecycle Hook ---
@@ -203,7 +216,7 @@ function calculateDaysPassed(habit) {
 
 function calculateProgress(habit) {
   if (!habit.targetDays) return 0;
-  return (habit.checkedDays.length / habit.targetDays) * 100;
+  return ((habit.progress?.length || 0) / habit.targetDays) * 100;
 }
 
 function formatDate(dateString) {
@@ -216,27 +229,33 @@ function formatDate(dateString) {
     return `${day}/${month}/${year}`;
 }
 
-
 // --- Habit Management ---
-function addHabit() {
-  if (!newHabit.name || !newHabit.targetDays || !newHabit.startDate || newHabit.targetDays < 1) return;
+async function addHabit() {
+  if (!newHabit.name || !newHabit.targetDays || !newHabit.startDate || newHabit.targetDays < 1 || isSubmitting.value) return;
 
-  const newHabitData = {
-    id: Date.now() + '_' + Math.random().toString(16).slice(2), // More unique ID
-    name: newHabit.name.trim(),
-    startDate: newHabit.startDate,
-    targetDays: newHabit.targetDays,
-    checkedDays: [],
-    completed: false,
-  };
-  habits.value.push(newHabitData);
+  isSubmitting.value = true;
+  
+  try {
+    const habitData = {
+      name: newHabit.name.trim(),
+      startDate: newHabit.startDate,
+      targetDays: newHabit.targetDays
+    };
+    
+    // Call API to create new habit
+    const createdHabit = await habitService.createHabit(habitData);
+    habits.value.push(createdHabit);
 
-  // Reset form
-  newHabit.name = '';
-  newHabit.targetDays = 7;
-  newHabit.startDate = todayIsoDate;
-
-  saveData();
+    // Reset form
+    newHabit.name = '';
+    newHabit.targetDays = 7;
+    newHabit.startDate = todayIsoDate;
+  } catch (err) {
+    console.error('Error adding habit:', err);
+    error.value = 'Không thể thêm thói quen. Vui lòng thử lại sau.';
+  } finally {
+    isSubmitting.value = false;
+  }
 }
 
 function confirmDeleteHabit(id) {
@@ -246,81 +265,114 @@ function confirmDeleteHabit(id) {
     }
 }
 
-function deleteHabit(id) {
-  habits.value = habits.value.filter(h => h.id !== id);
-  saveData();
-}
-
-function deleteAchievement(id) {
-    if (confirm(`Bạn có chắc muốn xóa thành tựu này không?`)) {
-       achievements.value = achievements.value.filter(a => a.id !== id);
-       saveData();
-    }
-}
-
-
-function toggleCheckDay(habitId, dayNumber) {
-  const habit = habits.value.find(h => h.id === habitId);
-  if (!habit || !isCheckable(habit, dayNumber)) return;
-
-  const dayIndex = habit.checkedDays.indexOf(dayNumber);
-
-  if (dayIndex > -1) {
-    // Uncheck day
-    habit.checkedDays.splice(dayIndex, 1);
-  } else {
-    // Check day
-    habit.checkedDays.push(dayNumber);
-    habit.checkedDays.sort((a, b) => a - b); // Keep checked days sorted
+async function deleteHabit(id) {
+  try {
+    // Call API to delete habit
+    await habitService.deleteHabit(id);
+    habits.value = habits.value.filter(h => h.id !== id);
+  } catch (err) {
+    console.error(`Error deleting habit ${id}:`, err);
+    error.value = 'Không thể xóa thói quen. Vui lòng thử lại sau.';
   }
-
-  // Check for completion after toggling
-  checkForCompletion(habit);
-
-  saveData();
 }
 
-function checkForCompletion(habit) {
-    // Check if ALL required days are checked (up to targetDays)
-    const allTargetDaysChecked = habit.checkedDays.length >= habit.targetDays;
-    // Or simpler: check if the target day itself is checked
-    // const targetDayChecked = habit.checkedDays.includes(habit.targetDays);
-
-    if (allTargetDaysChecked && !achievements.value.some(a => a.id === habit.id)) {
-        markAsCompleted(habit);
+async function deleteAchievement(id) {
+    if (confirm(`Bạn có chắc muốn xóa thành tựu này không?`)) {
+      try {
+        // Assuming there's an API endpoint for deleting achievements
+        // If not, you might need to handle this differently
+        await habitService.deleteHabit(id); // Reusing deleteHabit if there's no specific endpoint
+        achievements.value = achievements.value.filter(a => a.id !== id);
+      } catch (err) {
+        console.error(`Error deleting achievement ${id}:`, err);
+        error.value = 'Không thể xóa thành tựu. Vui lòng thử lại sau.';
+      }
     }
 }
 
-function markAsCompleted(habit) {
-    // Move from habits to achievements
-    const achievementData = {
-        id: habit.id,
-        name: habit.name,
-        startDate: habit.startDate,
-        targetDays: habit.targetDays,
-        completionDate: todayIsoDate // Mark completed today
-    };
-    achievements.value.push(achievementData);
+async function toggleCheckDay(habitId, dayNumber) {
+  const habit = habits.value.find(h => h.id === habitId);
+  if (!habit || !isCheckable(habit, dayNumber) || isUpdatingProgress.value) return;
 
-    // Remove from active habits (or mark as completed)
-    // Option 1: Remove completely
-    // habits.value = habits.value.filter(h => h.id !== habit.id);
-    // Option 2: Mark as completed (keeps it in main list but filters via computed)
-     const habitIndex = habits.value.findIndex(h => h.id === habit.id);
-     if (habitIndex > -1) {
-         habits.value[habitIndex].completed = true;
-     }
+  isUpdatingProgress.value = true;
+  
+  try {
+    // Calculate the actual date for this day number
+    const startDate = parseDate(habit.startDate);
+    const dayDate = new Date(startDate.getTime() + (dayNumber - 1) * 24 * 60 * 60 * 1000);
+    const dateString = dayDate.toISOString().split('T')[0]; // Format as YYYY-MM-DD
+    
+    const isDayAlreadyChecked = isDayChecked(habit, dayNumber);
+    
+    if (isDayAlreadyChecked) {
+      // If day is already checked, uncheck it
+      await habitService.deleteProgress(habitId, dateString);
+      
+      // Update local state
+      if (habit.progress) {
+        habit.progress = habit.progress.filter(date => date !== dateString);
+      }
+    } else {
+      // If day is not checked, check it
+      await habitService.markProgress(habitId, { date: dateString });
+      
+      // Update local state
+      if (!habit.progress) habit.progress = [];
+      habit.progress.push(dateString);
+      habit.progress.sort(); // Keep dates sorted
+    }
+    
+    // Check for completion after toggling
+    await checkForCompletion(habit);
+  } catch (err) {
+    console.error(`Error toggling progress for habit ${habitId}:`, err);
+    error.value = 'Không thể cập nhật tiến độ. Vui lòng thử lại sau.';
+  } finally {
+    isUpdatingProgress.value = false;
+  }
+}
 
-     // Sort achievements by completion date (most recent first)
-     achievements.value.sort((a,b) => new Date(b.completionDate) - new Date(a.completionDate));
+async function checkForCompletion(habit) {
+    // Check if ALL required days are checked (up to targetDays)
+    const allTargetDaysChecked = (habit.progress?.length || 0) >= habit.targetDays;
 
-    console.log(`Habit "${habit.name}" marked as completed!`);
-    // Maybe add a success message/toast later
+    if (allTargetDaysChecked && !habit.completed) {
+        await markAsCompleted(habit);
+    }
+}
+
+async function markAsCompleted(habit) {
+    try {
+      // Update habit as completed
+      const updatedHabit = await habitService.updateHabit(habit.id, { completed: true });
+      
+      // Update local state
+      const habitIndex = habits.value.findIndex(h => h.id === habit.id);
+      if (habitIndex > -1) {
+          habits.value[habitIndex] = updatedHabit;
+      }
+      
+      // Refresh achievements list
+      const achievementsData = await habitService.getAchievements();
+      achievements.value = achievementsData;
+      
+      console.log(`Habit "${habit.name}" marked as completed!`);
+    } catch (err) {
+      console.error(`Error marking habit ${habit.id} as completed:`, err);
+      error.value = 'Không thể đánh dấu hoàn thành. Vui lòng thử lại sau.';
+    }
 }
 
 // --- UI Helpers ---
 function isDayChecked(habit, dayNumber) {
-  return habit.checkedDays.includes(dayNumber);
+  if (!habit.progress) return false;
+  
+  // Calculate the actual date for this day number
+  const startDate = parseDate(habit.startDate);
+  const dayDate = new Date(startDate.getTime() + (dayNumber - 1) * 24 * 60 * 60 * 1000);
+  const dateString = dayDate.toISOString().split('T')[0]; // Format as YYYY-MM-DD
+  
+  return habit.progress.includes(dateString);
 }
 
 function isCheckable(habit, dayNumber) {

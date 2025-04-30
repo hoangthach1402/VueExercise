@@ -5,7 +5,7 @@ import TimelineView from '../views/TimelineView.vue';
 import HabitView from '../views/HabitView.vue';
 import LoginView from '../views/LoginView.vue'; // Import LoginView
 import ProfileView from '../views/ProfileView.vue'; // Import ProfileView
-import { useAuthStore } from '../stores/authStore'; // Import auth store
+import { useAuthStore } from '@/stores/authStore'; // Import auth store
 
 const routes = [
   {
